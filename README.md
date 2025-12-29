@@ -383,29 +383,12 @@ pos-store-system/
 # Database Configuration
 POSTGRES_DB=pos_store_db
 POSTGRES_USER=pos_admin
-POSTGRES_PASSWORD=your_secure_password_here
-DATABASE_URL=postgresql://pos_admin:password@localhost:5432/pos_store_db
+POSTGRES_PASSWORD=pos_secure_password_2024
+
 
 # Django Configuration
-SECRET_KEY=your-django-secret-key-here
-DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
-
-# Security Settings
-CORS_ALLOWED_ORIGINS=http://localhost:4584,https://your-domain.com
-CSRF_TRUSTED_ORIGINS=http://localhost:4584,https://your-domain.com
-
-# Encryption Settings
-ENCRYPTION_ENABLED=True
-ENCRYPTION_KEY=your-32-character-encryption-key
-
-# Email Configuration (for user notifications)
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
+SECRET_KEY=django-insecure-change-this-in-production-k8#m9@x!2p$q&w*e
+DEBUG=True
 ```
 
 ### Frontend Configuration
