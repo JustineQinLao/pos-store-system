@@ -1,0 +1,98 @@
+<div class="container">
+  <div class="header">
+    <div>
+      <button (click)="goBack()" class="back-btn">← Back</button>
+      <h1>Inventory Management</h1>
+    </div>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+  <div class="filters">
+    <input [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" placeholder="Search products..." class="search-input">
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="showLowStockOnly" (ngModelChange)="onLowStockToggle()">
+      Show Low Stock Only
+    </label>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <table *ngIf="!loading" class="table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Variant</th>
+        <th>Quantity</th>
+        <th>Low Stock Threshold</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of displayedInventory">
+        <td>{{ item.product_name }}</td>
+        <td>{{ item.variant_name || '-' }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.low_stock_threshold }}</td>
+        <td>
+          <span [class]="'badge-' + getStockClass(item)">
+            {{ item.quantity === 0 ? 'Out of Stock' : (item.is_low_stock ? 'Low Stock' : 'In Stock') }}
+          </span>
+        </td>
+        <td>
+          <button (click)="openAdjustModal(item)" class="btn-edit">Adjust Stock</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Pagination Controls (Cashier Style) -->
+  <div *ngIf="!loading && totalPages > 1" class="pagination-controls">
+    <button 
+      (click)="previousPage()"
+      [disabled]="currentPage === 1"
+      class="btn-pagination"
+    >
+      ← Previous
+    </button>
+    <span class="page-info">
+      Page {{ currentPage }} of {{ totalPages }} ({{ filteredInventory.length }} items)
+    </span>
+    <button 
+      (click)="nextPage()"
+      [disabled]="currentPage === totalPages"
+      class="btn-pagination"
+    >
+      Next →
+    </button>
+  </div>
+
+  <div *ngIf="showModal" class="modal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h2>Adjust Inventory</h2>
+      <p *ngIf="selectedItem"><strong>{{ selectedItem.product_name }}</strong> <span *ngIf="selectedItem.variant_name">({{ selectedItem.variant_name }})</span></p>
+      <p>Current Stock: <strong>{{ selectedItem?.quantity }}</strong></p>
+      
+      <form (ngSubmit)="adjustInventory()">
+        <div class="form-group">
+          <label>Adjustment Type</label>
+          <select [(ngModel)]="adjustmentType" name="type" class="form-control">
+            <option value="add">Add Stock</option>
+            <option value="subtract">Remove Stock</option>
+            <option value="set">Set Stock</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" [(ngModel)]="adjustmentQuantity" name="quantity" min="0" required class="form-control">
+        </div>
+        <div class="form-actions">
+          <button type="button" (click)="closeModal()" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,79 @@
+<nav class="navbar">
+  <div class="nav-container">
+    <!-- Logo/Brand -->
+    <div class="nav-brand">
+      <a routerLink="/products" class="brand-link">
+        <span class="brand-text">POS Store</span>
+      </a>
+    </div>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-toggle" (click)="toggleMenu()" [class.active]="isMenuOpen">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation Menu -->
+    <div class="nav-menu" [class.active]="isMenuOpen">
+      <!-- Public Links -->
+      <a routerLink="/products" routerLinkActive="active" (click)="closeMenu()" class="nav-link">
+        Products
+      </a>
+
+      <!-- Cart Link (always visible) -->
+      <a routerLink="/cart" routerLinkActive="active" (click)="closeMenu()" class="nav-link cart-link">
+        <span class="cart-icon">🛒</span>
+        Cart
+        <span *ngIf="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
+      </a>
+
+      <!-- Admin Links -->
+      <div *ngIf="isAdmin()" class="nav-dropdown">
+        <button class="nav-link dropdown-toggle">Admin</button>
+        <div class="dropdown-menu">
+          <a routerLink="/admin/dashboard" routerLinkActive="active" (click)="closeMenu()">Dashboard</a>
+          <a routerLink="/admin/products" routerLinkActive="active" (click)="closeMenu()">Products</a>
+          <a routerLink="/admin/categories" routerLinkActive="active" (click)="closeMenu()">Categories</a>
+          <a routerLink="/admin/inventory" routerLinkActive="active" (click)="closeMenu()">Inventory</a>
+          <a routerLink="/admin/orders" routerLinkActive="active" (click)="closeMenu()">Orders</a>
+          <a routerLink="/admin/users" routerLinkActive="active" (click)="closeMenu()">Users</a>
+        </div>
+      </div>
+
+      <!-- Cashier Links -->
+      <ng-container *ngIf="userRole === 'CASHIER'">
+        <a routerLink="/cashier" routerLinkActive="active" (click)="closeMenu()">
+          💳 Cashier
+        </a>
+        <a routerLink="/cashier/transactions" routerLinkActive="active" (click)="closeMenu()">
+          📋 Transactions
+        </a>
+      </ng-container>
+
+      <!-- Authentication Links -->
+      <div *ngIf="!isAuthenticated()" class="auth-links">
+        <a routerLink="/login" routerLinkActive="active" (click)="closeMenu()" class="nav-link">Login</a>
+        <a routerLink="/register" routerLinkActive="active" (click)="closeMenu()" class="nav-link btn-register">Register</a>
+      </div>
+
+      <!-- User Menu (when authenticated) -->
+      <div *ngIf="isAuthenticated()" class="user-menu">
+        <div class="nav-dropdown">
+          <button class="nav-link dropdown-toggle user-toggle">
+            <span class="user-icon">👤</span>
+            {{ currentUser?.first_name || currentUser?.username }}
+          </button>
+          <div class="dropdown-menu">
+            <div class="user-info">
+              <p class="user-name">{{ currentUser?.first_name }} {{ currentUser?.last_name }}</p>
+              <p class="user-role">{{ currentUser?.role }}</p>
+            </div>
+            <hr>
+            <button (click)="logout()" class="logout-btn">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

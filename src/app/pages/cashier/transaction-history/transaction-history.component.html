@@ -1,0 +1,102 @@
+<div class="transaction-history-container">
+  <div class="page-header">
+    <h1>Transaction History</h1>
+    <button (click)="loadTransactions()" class="btn-refresh">🔄 Refresh</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Search Transaction #</label>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (ngModelChange)="applyFilters()"
+        placeholder="Search by transaction number..."
+        class="filter-input"
+      >
+    </div>
+    
+    <div class="filter-group">
+      <label>Status</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()" class="filter-select">
+        <option value="">All Status</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="PENDING">Pending</option>
+        <option value="CANCELLED">Cancelled</option>
+        <option value="REFUNDED">Refunded</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label>Date</label>
+      <input 
+        type="date" 
+        [(ngModel)]="dateFilter" 
+        (ngModelChange)="applyFilters()"
+        class="filter-input"
+      >
+    </div>
+  </div>
+
+  <!-- Error/Loading States -->
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading transactions...</p>
+  </div>
+
+  <!-- Transactions Table -->
+  <div *ngIf="!loading" class="transactions-table-container">
+    <table class="transactions-table">
+      <thead>
+        <tr>
+          <th>Transaction #</th>
+          <th>Date & Time</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Change</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let transaction of getDisplayedTransactions()">
+          <td class="transaction-number">{{ transaction.transaction_number }}</td>
+          <td>{{ transaction.created_at | date:'short' }}</td>
+          <td class="text-center">{{ getTotalItems(transaction.cart_items) }}</td>
+          <td class="amount">${{ transaction.total | number:'1.2-2' }}</td>
+          <td class="amount">${{ transaction.amount_paid | number:'1.2-2' }}</td>
+          <td class="amount">${{ transaction.change_given | number:'1.2-2' }}</td>
+          <td>
+            <span [class]="getStatusClass(transaction.status)" class="status-badge">
+              {{ transaction.status }}
+            </span>
+          </td>
+          <td>
+            <button (click)="viewTransactionDetails(transaction)" class="btn-view">
+              👁️ View
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredTransactions.length === 0">
+          <td colspan="8" class="no-data">No transactions found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalPages > 1" class="pagination">
+    <button (click)="previousPage()" [disabled]="currentPage === 1" class="btn-page">
+      ← Previous
+    </button>
+    <span class="page-info">
+      Page {{ currentPage }} of {{ totalPages }} ({{ filteredTransactions.length }} transactions)
+    </span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="btn-page">
+      Next →
+    </button>
+  </div>
+</div>

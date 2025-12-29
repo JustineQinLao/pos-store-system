@@ -1,0 +1,226 @@
+<div class="orders-container">
+  <div class="page-header">
+    <div>
+      <h1>Order History</h1>
+      <p class="subtitle">View and manage all transactions</p>
+    </div>
+    <div class="header-actions">
+      <button (click)="exportToCSV()" class="btn-export">📥 Export CSV</button>
+      <button (click)="loadTransactions()" class="btn-refresh">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Search Transaction #</label>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (ngModelChange)="applyFilters()"
+        placeholder="Search..."
+        class="filter-input"
+      >
+    </div>
+    
+    <div class="filter-group">
+      <label>Cashier</label>
+      <input 
+        type="text" 
+        [(ngModel)]="cashierFilter" 
+        (ngModelChange)="applyFilters()"
+        placeholder="Filter by cashier..."
+        class="filter-input"
+      >
+    </div>
+    
+    <div class="filter-group">
+      <label>Status</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()" class="filter-select">
+        <option value="">All Status</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="PENDING">Pending</option>
+        <option value="CANCELLED">Cancelled</option>
+        <option value="REFUNDED">Refunded</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label>Date</label>
+      <input 
+        type="date" 
+        [(ngModel)]="dateFilter" 
+        (ngModelChange)="applyFilters()"
+        class="filter-input"
+      >
+    </div>
+  </div>
+
+  <!-- Error/Loading States -->
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading transactions...</p>
+  </div>
+
+  <!-- Transactions Table -->
+  <div *ngIf="!loading" class="transactions-table-container">
+    <table class="transactions-table">
+      <thead>
+        <tr>
+          <th>Transaction #</th>
+          <th>Date & Time</th>
+          <th>Cashier</th>
+          <th>Items</th>
+          <th>Subtotal</th>
+          <th>Tax</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Change</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let transaction of getDisplayedTransactions()">
+          <td class="transaction-number">{{ transaction.transaction_number }}</td>
+          <td>{{ transaction.created_at | date:'short' }}</td>
+          <td>{{ transaction.cashier_name || 'N/A' }}</td>
+          <td class="text-center">{{ getTotalItems(transaction.cart_items) }}</td>
+          <td class="amount">${{ transaction.subtotal | number:'1.2-2' }}</td>
+          <td class="amount">${{ transaction.tax | number:'1.2-2' }}</td>
+          <td class="amount">${{ transaction.total | number:'1.2-2' }}</td>
+          <td class="amount">${{ transaction.amount_paid | number:'1.2-2' }}</td>
+          <td class="amount">${{ transaction.change_given | number:'1.2-2' }}</td>
+          <td>
+            <span [class]="getStatusClass(transaction.status)" class="status-badge">
+              {{ transaction.status }}
+            </span>
+          </td>
+          <td>
+            <button (click)="viewTransactionDetails(transaction)" class="btn-view">
+              👁️ View
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredTransactions.length === 0">
+          <td colspan="11" class="no-data">No transactions found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalPages > 1" class="pagination">
+    <button (click)="previousPage()" [disabled]="currentPage === 1" class="btn-page">
+      ← Previous
+    </button>
+    <span class="page-info">
+      Page {{ currentPage }} of {{ totalPages }} ({{ filteredTransactions.length }} transactions)
+    </span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="btn-page">
+      Next →
+    </button>
+  </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div *ngIf="showDetailsModal && selectedTransaction" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Transaction Details</h2>
+      <button (click)="closeDetailsModal()" class="btn-close">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="detail-section">
+        <h3>Transaction Information</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Transaction #:</label>
+            <span>{{ selectedTransaction.transaction_number }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Date:</label>
+            <span>{{ selectedTransaction.created_at | date:'medium' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Cashier:</label>
+            <span>{{ selectedTransaction.cashier_name || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span [class]="getStatusClass(selectedTransaction.status)" class="status-badge">
+              {{ selectedTransaction.status }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>Payment Method:</label>
+            <span>{{ selectedTransaction.payment_method }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Cart Items</h3>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Variant</th>
+              <th>Add-ons</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selectedTransaction.cart_items">
+              <td>{{ item.product.name }}</td>
+              <td>{{ item.variant?.name || '-' }}</td>
+              <td>{{ getAddonsText(item.addons) }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ (item.subtotal / item.quantity) | number:'1.2-2' }}</td>
+              <td>${{ item.subtotal | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="detail-section">
+        <h3>Payment Summary</h3>
+        <div class="summary-grid">
+          <div class="summary-row">
+            <span>Subtotal:</span>
+            <span>${{ selectedTransaction.subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Tax:</span>
+            <span>${{ selectedTransaction.tax | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-row total">
+            <span>Total:</span>
+            <span>${{ selectedTransaction.total | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Amount Paid:</span>
+            <span>${{ selectedTransaction.amount_paid | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Change Given:</span>
+            <span>${{ selectedTransaction.change_given | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section" *ngIf="selectedTransaction.notes">
+        <h3>Notes</h3>
+        <p>{{ selectedTransaction.notes }}</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button (click)="closeDetailsModal()" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>

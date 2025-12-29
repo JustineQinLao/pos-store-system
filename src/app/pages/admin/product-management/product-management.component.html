@@ -1,0 +1,279 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <button (click)="goBack()" class="text-gray-600 hover:text-gray-900">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 class="text-3xl font-bold text-gray-900">Product Management</h1>
+        </div>
+        <button (click)="openCreateModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
+          + Add Product
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Success/Error Messages -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div *ngIf="success" class="bg-green-50 border-l-4 border-green-500 p-4 rounded mb-4">
+      <p class="text-green-700">{{ success }}</p>
+    </div>
+    <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
+      <p class="text-red-700">{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            (ngModelChange)="onSearchChange()"
+            placeholder="Search by name or SKU..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+          <select 
+            [(ngModel)]="selectedCategory" 
+            (ngModelChange)="onCategoryChange()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">All Categories</option>
+            <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="showInactive" 
+              (ngModelChange)="onShowInactiveChange()"
+              class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span class="text-sm font-medium text-gray-700">Show Inactive</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <p class="mt-4 text-gray-600">Loading products...</p>
+    </div>
+
+    <!-- Products Table -->
+    <div *ngIf="!loading" class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let product of displayedProducts" [class.bg-gray-50]="!product.is_active">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10 bg-gray-200 rounded flex items-center justify-center">
+                  <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
+                  <div class="text-sm text-gray-500">{{ product.description ? (product.description | slice:0:50) : '' }}{{ product.description && product.description.length > 50 ? '...' : '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ product.sku }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ product.category_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ product.base_price | number:'1.2-2' }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm" [class.text-green-600]="product.current_stock > 50" [class.text-yellow-600]="product.current_stock > 0 && product.current_stock <= 50" [class.text-red-600]="product.current_stock === 0">
+                {{ product.current_stock }} units
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span *ngIf="product.is_active" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                Active
+              </span>
+              <span *ngIf="!product.is_active" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                Inactive
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+              <button (click)="openEditModal(product)" class="text-indigo-600 hover:text-indigo-900">Edit</button>
+              <button (click)="toggleProductStatus(product)" [class.text-green-600]="!product.is_active" [class.hover:text-green-900]="!product.is_active" [class.text-yellow-600]="product.is_active" [class.hover:text-yellow-900]="product.is_active">
+                {{ product.is_active ? 'Deactivate' : 'Activate' }}
+              </button>
+              <button (click)="deleteProduct(product)" class="text-red-600 hover:text-red-900">Delete</button>
+            </td>
+          </tr>
+          <tr *ngIf="displayedProducts.length === 0">
+            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+              No products found. Try adjusting your filters or add a new product.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <!-- Pagination Controls (Cashier Style) -->
+      <div *ngIf="totalPages > 1" class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-center gap-4">
+          <button 
+            (click)="previousPage()"
+            [disabled]="currentPage === 1"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            ← Previous
+          </button>
+          <span class="px-4 py-2 text-sm font-medium text-gray-700">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+          <button 
+            (click)="nextPage()"
+            [disabled]="currentPage >= totalPages"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" (click)="closeModal()">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white" (click)="$event.stopPropagation()">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</h3>
+        <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
+        <p class="text-red-700">{{ error }}</p>
+      </div>
+
+      <form (ngSubmit)="saveProduct()" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="currentProduct.name" 
+            name="name"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="currentProduct.sku" 
+            name="sku"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <select 
+            [(ngModel)]="currentProduct.category" 
+            name="category"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option [ngValue]="undefined">Select a category</option>
+            <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Base Price *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="currentProduct.base_price" 
+            name="base_price"
+            step="0.01"
+            min="0"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea 
+            [(ngModel)]="currentProduct.description" 
+            name="description"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          ></textarea>
+        </div>
+
+        <div class="flex items-center space-x-6">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="currentProduct.is_taxable" 
+              name="is_taxable"
+              class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span class="text-sm font-medium text-gray-700">Taxable</span>
+          </label>
+
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="currentProduct.is_active" 
+              name="is_active"
+              class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span class="text-sm font-medium text-gray-700">Active</span>
+          </label>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4">
+          <button 
+            type="button" 
+            (click)="closeModal()"
+            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            [disabled]="loading"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {{ loading ? 'Saving...' : (isEditMode ? 'Update' : 'Create') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

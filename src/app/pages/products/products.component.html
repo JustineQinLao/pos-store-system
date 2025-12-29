@@ -1,0 +1,228 @@
+<div class="products-container">
+  <!-- Header with Cart -->
+  <div class="products-header">
+    <div>
+      <h1>Products</h1>
+      <p class="subtitle">Browse our collection of products</p>
+    </div>
+    <button (click)="viewCart()" class="cart-button">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+      <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+      Cart
+    </button>
+  </div>
+
+  <!-- Success/Error Messages -->
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-grid">
+      <!-- Search -->
+      <div class="filter-item">
+        <label for="search">Search</label>
+        <input 
+          type="text" 
+          id="search" 
+          [(ngModel)]="filters.search" 
+          placeholder="Search products..."
+          (keyup.enter)="applyFilters()"
+        />
+      </div>
+
+      <!-- Category Filter -->
+      <div class="filter-item">
+        <label for="category">Category</label>
+        <select id="category" [(ngModel)]="filters.category">
+          <option [value]="undefined">All Categories</option>
+          <option *ngFor="let category of categories" [value]="category.id">
+            {{ category.name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Min Price -->
+      <div class="filter-item">
+        <label for="minPrice">Min Price</label>
+        <input 
+          type="number" 
+          id="minPrice" 
+          [(ngModel)]="filters.min_price" 
+          placeholder="0"
+          min="0"
+        />
+      </div>
+
+      <!-- Max Price -->
+      <div class="filter-item">
+        <label for="maxPrice">Max Price</label>
+        <input 
+          type="number" 
+          id="maxPrice" 
+          [(ngModel)]="filters.max_price" 
+          placeholder="1000"
+          min="0"
+        />
+      </div>
+
+      <!-- In Stock Filter -->
+      <div class="filter-item">
+        <label for="inStock">Availability</label>
+        <select id="inStock" [(ngModel)]="filters.in_stock">
+          <option [value]="undefined">All Products</option>
+          <option [value]="true">In Stock Only</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Filter Actions -->
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="applyFilters()">
+        Apply Filters
+      </button>
+      <button class="btn btn-secondary" (click)="clearFilters()">
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading products...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error-container">
+    <p class="error-message">{{ error }}</p>
+    <button class="btn btn-primary" (click)="loadProducts()">Retry</button>
+  </div>
+
+  <!-- Products Grid -->
+  <div *ngIf="!loading && !error" class="products-content">
+    <!-- Results Info -->
+    <div class="results-info">
+      <p>Showing {{ filteredProducts.length }} of {{ products.length }} products</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredProducts.length === 0" class="empty-state">
+      <p>No products found</p>
+      <button class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
+    </div>
+
+    <!-- Products Grid -->
+    <div *ngIf="filteredProducts.length > 0" class="products-grid">
+      <div *ngFor="let product of filteredProducts" class="product-card">
+        <!-- Product Image -->
+        <div class="product-image">
+          <img [src]="getImageUrl(product)" [alt]="product.name" />
+          <span class="stock-badge" [ngClass]="getStockClass(product)">
+            {{ getStockStatus(product) }}
+          </span>
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info">
+          <h3 class="product-name">{{ product.name }}</h3>
+          <p class="product-category">{{ getCategoryName(product) }}</p>
+          <p class="product-description">{{ product.description }}</p>
+          
+          <!-- Price -->
+          <div class="product-price">
+            <span class="price">${{ product.base_price }}</span>
+            <span *ngIf="product.is_taxable" class="tax-label">+ tax</span>
+          </div>
+
+          <!-- Stock Info -->
+          <div class="product-stock">
+            <span class="stock-count">{{ product.current_stock }} in stock</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="product-actions">
+            <button 
+              class="btn btn-secondary btn-block"
+              (click)="openProductDetail(product)"
+            >
+              View Details
+            </button>
+            <button 
+              class="btn btn-primary btn-block"
+              [disabled]="product.current_stock <= 0"
+              (click)="addToCart(product)"
+            >
+              Quick Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load More Button -->
+    <div class="load-more-section" *ngIf="hasMoreProducts && !loading">
+      <button 
+        class="btn btn-primary btn-load-more"
+        (click)="loadMoreProducts()"
+        [disabled]="isLoadingMore"
+      >
+        <span *ngIf="!isLoadingMore">Load More Products</span>
+        <span *ngIf="isLoadingMore">Loading...</span>
+      </button>
+      <p class="pagination-info">
+        Showing {{ filteredProducts.length }} products
+      </p>
+    </div>
+    
+    <!-- End of Results Message -->
+    <div class="end-message" *ngIf="!hasMoreProducts && !loading && filteredProducts.length > 0">
+      <p>You've reached the end of the results</p>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button 
+        class="btn btn-secondary"
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+      >
+        Previous
+      </button>
+
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          class="btn"
+          [ngClass]="{'btn-primary': currentPage === i + 1, 'btn-secondary': currentPage !== i + 1}"
+          (click)="goToPage(i + 1)"
+        >
+          {{ i + 1 }}
+        </button>
+      </div>
+
+      <button 
+        class="btn btn-secondary"
+        (click)="nextPage()"
+        [disabled]="currentPage === totalPages"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Detail Modal -->
+<app-product-detail-modal 
+  *ngIf="selectedProduct"
+  [product]="selectedProduct"
+  [show]="showProductModal"
+  (close)="closeProductModal()"
+  (addToCart)="handleAddToCart($event)">
+</app-product-detail-modal>

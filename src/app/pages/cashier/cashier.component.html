@@ -1,0 +1,288 @@
+<div class="cashier-container">
+  <div class="cashier-header">
+    <h1>Cashier Dashboard</h1>
+    <div class="header-actions">
+      <button (click)="toggleScanner()" class="btn-primary">
+        {{ showScanner ? '❌ Close Scanner' : '📷 Scan QR Code' }}
+      </button>
+      <button (click)="toggleProductSearch()" class="btn-primary">
+        {{ showProductSearch ? '❌ Close Products' : '🛍️ Add Products' }}
+      </button>
+      <button (click)="newTransaction()" class="btn-secondary">🔄 New Transaction</button>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+  <div class="cashier-layout">
+    <!-- Left Panel: Product Search & Scanner -->
+    <div class="left-panel">
+      <!-- QR Scanner Section -->
+      <div class="scanner-section" *ngIf="showScanner">
+        <h2>QR Code Scanner</h2>
+        <div class="scanner-box">
+          <input 
+            type="text" 
+            [(ngModel)]="qrCodeData" 
+            placeholder="Scan or paste QR code data here"
+            class="qr-input"
+          >
+          <button (click)="scanQRCode()" class="btn-scan">Scan</button>
+        </div>
+      </div>
+
+      <!-- Product Search Section -->
+      <div class="product-search-section" *ngIf="showProductSearch">
+        <h2>Add Products Manually</h2>
+        <div class="search-box">
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            (keyup.enter)="filterProducts()"
+            placeholder="Search products... (Press Enter)"
+            class="search-input"
+          >
+          <button (click)="filterProducts()" class="btn-search">Search</button>
+          <div class="quantity-input">
+            <label>Qty:</label>
+            <input type="number" [(ngModel)]="quantity" min="1" max="99" class="qty-input">
+          </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div *ngIf="isLoadingProducts" class="loading-state">
+          <p>Loading products...</p>
+        </div>
+        
+        <!-- Products Grid -->
+        <div class="products-grid" *ngIf="!isLoadingProducts && filteredProducts.length > 0">
+          <div *ngFor="let product of filteredProducts" class="product-card" (click)="openProductModal(product)">
+            <div class="product-info">
+              <h4>{{ product.name }}</h4>
+              <p class="product-sku">SKU: {{ product.sku }}</p>
+              <p class="product-price">${{ product.base_price }}</p>
+              <p class="product-stock" [class.low-stock]="product.current_stock < 10">
+                Stock: {{ product.current_stock }}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- No Results -->
+        <div *ngIf="!isLoadingProducts && filteredProducts.length === 0" class="no-results">
+          <p>No products found. Try a different search term.</p>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div class="pagination-controls" *ngIf="!isLoadingProducts && filteredProducts.length > 0">
+          <button 
+            (click)="previousProductPage()" 
+            [disabled]="currentPage === 1"
+            class="btn-pagination"
+          >
+            ← Previous
+          </button>
+          <span class="page-info">
+            Page {{ currentPage }} of {{ getTotalPages() }} 
+            ({{ totalProducts }} products)
+          </span>
+          <button 
+            (click)="nextProductPage()" 
+            [disabled]="currentPage >= getTotalPages()"
+            class="btn-pagination"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Current Cart -->
+    <div class="right-panel">
+      <div class="cart-section" *ngIf="getCurrentCart()">
+        <h2>Current Transaction</h2>
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Variant</th>
+              <th>Add-ons</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Total</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getCurrentCart()!.items; let i = index">
+              <td>{{ item.product.name }}</td>
+              <td>{{ item.variant?.name || '-' }}</td>
+              <td>{{ getAddonsText(item) }}</td>
+              <td>
+                <input 
+                  type="number" 
+                  [value]="item.quantity" 
+                  (change)="updateQuantity(i, +$any($event.target).value)"
+                  min="1" 
+                  class="qty-input-small"
+                >
+              </td>
+              <td>${{ (getItemPrice(item) / item.quantity) | number:'1.2-2' }}</td>
+              <td>${{ getItemPrice(item) | number:'1.2-2' }}</td>
+              <td>
+                <button (click)="removeFromManualCart(i)" class="btn-remove">🗑️</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>${{ getSubtotal() | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-row">
+            <span>Tax (10%):</span>
+            <span>${{ getTax() | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-row grand-total">
+            <span>Grand Total:</span>
+            <span>${{ getTotal() | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <button 
+          (click)="scannedCart ? processPayment() : processManualPayment()" 
+          class="btn-checkout"
+        >
+          Complete Payment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Modal -->
+  <div *ngIf="showReceipt" class="modal">
+    <div class="receipt-modal">
+      <div class="receipt-content">
+        <h2>Receipt</h2>
+        <p class="receipt-number">{{ receiptData.receiptNumber }}</p>
+        <p class="receipt-date">{{ receiptData.timestamp | date:'medium' }}</p>
+        
+        <hr>
+        
+        <table class="receipt-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of receiptData.items">
+              <td>
+                {{ item.product.name }}
+                <span *ngIf="item.variant" class="small">({{ item.variant.name }})</span>
+                <span *ngIf="item.addons.length > 0" class="small">+ {{ getAddonsText(item) }}</span>
+              </td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ getItemPrice(item) | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr>
+
+        <div class="receipt-totals">
+          <div class="total-line">
+            <span>Subtotal:</span><span>${{ receiptData.subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-line">
+            <span>Tax:</span><span>${{ receiptData.tax | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-line grand-total">
+            <span>Total:</span><span>${{ receiptData.total | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="receipt-actions">
+          <button (click)="printReceipt()" class="btn-print">Print Receipt</button>
+          <button (click)="closeReceipt()" class="btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Detail Modal -->
+  <div *ngIf="showProductModal && selectedProduct" class="modal">
+    <div class="modal-content product-modal">
+      <div class="modal-header">
+        <h2>{{ selectedProduct.name }}</h2>
+        <button (click)="closeProductModal()" class="btn-close">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <p class="product-description">{{ selectedProduct.description }}</p>
+        <p class="product-base-price">Base Price: ${{ selectedProduct.base_price }}</p>
+        
+        <!-- Variants Selection -->
+        <div *ngIf="selectedProduct.variants && selectedProduct.variants.length > 0" class="variants-section">
+          <h3>Select Variant</h3>
+          <div class="variants-grid">
+            <label *ngFor="let variant of selectedProduct.variants" class="variant-option">
+              <input 
+                type="radio" 
+                name="variant" 
+                [value]="variant.id"
+                [(ngModel)]="selectedVariant"
+                [checked]="selectedVariant?.id === variant.id"
+                (change)="selectedVariant = variant"
+              >
+              <span class="variant-label">
+                {{ variant.name }}
+                <span class="variant-price">+${{ variant.price_adjustment }}</span>
+              </span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Add-ons Selection -->
+        <div *ngIf="selectedProduct.available_addons && selectedProduct.available_addons.length > 0" class="addons-section">
+          <h3>Add-ons (Optional)</h3>
+          <div class="addons-grid">
+            <label *ngFor="let addon of selectedProduct.available_addons" class="addon-option">
+              <input 
+                type="checkbox" 
+                [checked]="isAddonSelected(addon)"
+                (change)="toggleAddon(addon)"
+              >
+              <span class="addon-label">
+                {{ addon.name }}
+                <span class="addon-price">+${{ addon.price }}</span>
+              </span>
+              <p class="addon-description">{{ addon.description }}</p>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Quantity -->
+        <div class="quantity-section">
+          <label>Quantity:</label>
+          <input type="number" [(ngModel)]="quantity" min="1" max="99" class="qty-input">
+        </div>
+        
+        <!-- Total Price Preview -->
+        <div class="price-preview">
+          <strong>Total: ${{ pricingService.calculateItemPrice(selectedProduct, selectedVariant || undefined, selectedAddons, quantity) | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button (click)="closeProductModal()" class="btn-secondary">Cancel</button>
+        <button (click)="addProductToCart()" class="btn-primary">Add to Cart</button>
+      </div>
+    </div>
+  </div>
+</div>

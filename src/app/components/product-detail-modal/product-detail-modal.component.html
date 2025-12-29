@@ -1,0 +1,58 @@
+<div *ngIf="show" class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="close-btn" (click)="onClose()">×</button>
+    
+    <div class="modal-body">
+      <h2>{{ product.name }}</h2>
+      <p class="description">{{ product.description }}</p>
+      <p class="base-price">${{ product.base_price | number:'1.2-2' }}</p>
+
+      <!-- Variants -->
+      <div *ngIf="variants.length > 0" class="section">
+        <h3>Select Size/Variant</h3>
+        <div class="variants-grid">
+          <button *ngFor="let variant of variants" 
+                  (click)="selectVariant(variant)"
+                  [class.selected]="selectedVariant?.id === variant.id"
+                  class="variant-btn">
+            {{ variant.name }} 
+            <span class="variant-price">${{ variant.final_price | number:'1.2-2' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add-ons -->
+      <div *ngIf="addons.length > 0" class="section">
+        <h3>Add-ons (Optional)</h3>
+        <div class="addons-list">
+          <label *ngFor="let addon of addons" class="addon-item">
+            <input type="checkbox" 
+                   [checked]="isAddonSelected(addon)"
+                   (change)="toggleAddon(addon)">
+            <span>{{ addon.name }} (+${{ addon.price | number:'1.2-2' }})</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Quantity -->
+      <div class="section">
+        <h3>Quantity</h3>
+        <div class="quantity-control">
+          <button (click)="decrementQuantity()" [disabled]="quantity <= 1">-</button>
+          <span>{{ quantity }}</span>
+          <button (click)="incrementQuantity()" [disabled]="quantity >= product.current_stock">+</button>
+        </div>
+        <p class="stock-info">{{ product.current_stock }} available</p>
+      </div>
+
+      <!-- Total -->
+      <div class="total-section">
+        <h3>Total: ${{ calculateTotalPrice() | number:'1.2-2' }}</h3>
+      </div>
+
+      <button class="add-to-cart-btn" (click)="onAddToCart()" [disabled]="loading">
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</div>

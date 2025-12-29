@@ -1,0 +1,98 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Admin Dashboard</h1>
+    <p class="subtitle">Overview of your store</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading dashboard...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon products">📦</div>
+      <div class="stat-content">
+        <h3>Total Products</h3>
+        <p class="stat-value">{{ stats.totalProducts }}</p>
+      </div>
+      <a routerLink="/admin/products" class="stat-link">Manage →</a>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon categories">🏷️</div>
+      <div class="stat-content">
+        <h3>Categories</h3>
+        <p class="stat-value">{{ stats.totalCategories }}</p>
+      </div>
+      <a routerLink="/admin/categories" class="stat-link">Manage →</a>
+    </div>
+
+    <div class="stat-card warning">
+      <div class="stat-icon inventory">⚠️</div>
+      <div class="stat-content">
+        <h3>Low Stock Items</h3>
+        <p class="stat-value">{{ stats.lowStockItems }}</p>
+      </div>
+      <a routerLink="/admin/inventory" class="stat-link">View →</a>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon transactions">💰</div>
+      <div class="stat-content">
+        <h3>Total Transactions</h3>
+        <p class="stat-value">{{ stats.totalTransactions }}</p>
+      </div>
+      <a routerLink="/admin/orders" class="stat-link">View →</a>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-icon revenue">💵</div>
+      <div class="stat-content">
+        <h3>Today's Revenue</h3>
+        <p class="stat-value">${{ stats.todayRevenue | number:'1.2-2' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="actions-grid">
+      <a routerLink="/admin/products" class="action-card">
+        <div class="action-icon">📦</div>
+        <h3>Manage Products</h3>
+        <p>Add, edit, or remove products</p>
+      </a>
+
+      <a routerLink="/admin/categories" class="action-card">
+        <div class="action-icon">🏷️</div>
+        <h3>Manage Categories</h3>
+        <p>Organize product categories</p>
+      </a>
+
+      <a routerLink="/admin/inventory" class="action-card">
+        <div class="action-icon">📊</div>
+        <h3>Inventory Management</h3>
+        <p>Track and update stock levels</p>
+      </a>
+
+      <a routerLink="/admin/orders" class="action-card">
+        <div class="action-icon">📋</div>
+        <h3>View Orders</h3>
+        <p>See all transaction history</p>
+      </a>
+
+      <a routerLink="/admin/users" class="action-card">
+        <div class="action-icon">👥</div>
+        <h3>User Management</h3>
+        <p>Manage staff accounts</p>
+      </a>
+    </div>
+  </div>
+</div>

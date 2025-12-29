@@ -1,0 +1,89 @@
+<div class="container">
+  <div class="header">
+    <div>
+      <button (click)="goBack()" class="back-btn">← Back</button>
+      <h1>Category Management</h1>
+    </div>
+    <button (click)="openCreateModal()" class="btn-primary">+ Add Category</button>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <table *ngIf="!loading" class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Products</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let category of displayedCategories">
+        <td>{{ category.name }}</td>
+        <td>{{ category.description }}</td>
+        <td>{{ category.product_count }}</td>
+        <td>
+          <span [class]="category.is_active ? 'badge-active' : 'badge-inactive'">
+            {{ category.is_active ? 'Active' : 'Inactive' }}
+          </span>
+        </td>
+        <td>
+          <button (click)="openEditModal(category)" class="btn-edit">Edit</button>
+          <button (click)="deleteCategory(category)" class="btn-delete">Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Pagination Controls (Cashier Style) -->
+  <div *ngIf="!loading && totalPages > 1" class="pagination-controls">
+    <button 
+      (click)="previousPage()"
+      [disabled]="currentPage === 1"
+      class="btn-pagination"
+    >
+      ← Previous
+    </button>
+    <span class="page-info">
+      Page {{ currentPage }} of {{ totalPages }} ({{ filteredCategories.length }} categories)
+    </span>
+    <button 
+      (click)="nextPage()"
+      [disabled]="currentPage === totalPages"
+      class="btn-pagination"
+    >
+      Next →
+    </button>
+  </div>
+
+  <div *ngIf="showModal" class="modal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h2>{{ isEditMode ? 'Edit' : 'Add' }} Category</h2>
+      <form (ngSubmit)="saveCategory()">
+        <div class="form-group">
+          <label>Name *</label>
+          <input [(ngModel)]="currentCategory.name" name="name" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="currentCategory.description" name="description"></textarea>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="currentCategory.is_active" name="is_active">
+            Active
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" (click)="closeModal()" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

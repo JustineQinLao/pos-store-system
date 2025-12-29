@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  angular:
+    build:
+      context: .
+      dockerfile: docker/angular.Dockerfile
+    ports:
+      - "4584:4584"
+    volumes:
+      - .:/app
+    command: npm run start -- --host 0.0.0.0 --port 4584
+
+  api.db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  django:
+    build:
+      context: .
+      dockerfile: docker/django.Dockerfile
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./backend:/app
+    environment:
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: api.db
+      DB_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG}
+    depends_on:
+      api.db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
