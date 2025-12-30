@@ -1,0 +1,222 @@
+<div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+        <p class="text-gray-600 text-sm">Manage staff accounts and permissions</p>
+      </div>
+      <button (click)="openCreateModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+        + Add User
+      </button>
+    </div>
+  </div>
+
+  <!-- Success/Error Messages -->
+  <div *ngIf="success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-md mb-4">{{ success }}</div>
+  <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-4">{{ error }}</div>
+
+  <!-- Filters -->
+  <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex gap-4 flex-wrap">
+    <div class="flex flex-col min-w-[200px]">
+      <label class="text-sm font-medium text-gray-700 mb-1">Search</label>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (ngModelChange)="applyFilters()"
+        placeholder="Search by name or email..."
+        class="border border-gray-300 rounded-md px-3 py-2 text-sm"
+      >
+    </div>
+    
+    <div class="flex flex-col min-w-[200px]">
+      <label class="text-sm font-medium text-gray-700 mb-1">Status</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+        <option value="">All Status</option>
+        <option value="verified">Verified</option>
+        <option value="unverified">Unverified</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-8">
+    <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <p class="text-gray-600 mt-2">Loading users...</p>
+  </div>
+
+  <!-- Users Table -->
+  <div *ngIf="!loading" class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+    <table class="w-full table-auto">
+      <thead>
+        <tr class="bg-gray-50 border-b">
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let user of filteredUsers" class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.first_name }} {{ user.last_name }}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.email }}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <span class="px-2 py-1 rounded-full text-xs font-medium" 
+                  [ngClass]="{
+                    'bg-purple-100 text-purple-800': user.role === 'SUPER_ADMIN',
+                    'bg-blue-100 text-blue-800': user.role === 'ADMIN',
+                    'bg-green-100 text-green-800': user.role === 'CASHIER'
+                  }">
+              {{ getUserRole(user) }}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <span *ngIf="user.is_verified" class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>
+            <span *ngIf="!user.is_verified" class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Unverified</span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.date_joined | date:'short' }}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <div class="flex gap-2">
+              <button *ngIf="!user.is_verified && loggedInUser?.role === 'SUPER_ADMIN'" 
+                      (click)="verifyUser(user)" 
+                      class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-medium">
+                ✓ Verify
+              </button>
+              <button (click)="openEditModal(user)" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium">
+                Edit
+              </button>
+              <button *ngIf="user.id !== currentUser?.id" 
+                      (click)="deleteUser(user)" 
+                      class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-medium">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filteredUsers.length === 0">
+          <td colspan="6" class="px-6 py-8 text-center text-gray-500">No users found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex justify-between items-center mt-6 bg-white p-4 rounded-lg shadow-md">
+    <button (click)="previousPage()" [disabled]="currentPage === 1" class="bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium">← Previous</button>
+    <span class="text-sm text-gray-600">Page {{ currentPage }} of {{ totalPages }} ({{ filteredUsers.length }} users)</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium">Next →</button>
+  </div>
+</div>
+
+<!-- User Modal -->
+<div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center p-6 border-b border-gray-200">
+      <h2 class="text-2xl font-bold text-gray-900">{{ isEditMode ? 'Edit User' : 'Create User' }}</h2>
+      <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
+    </div>
+    
+    <form (ngSubmit)="saveUser()" class="p-6">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="currentUser.first_name" 
+            name="first_name"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="currentUser.last_name" 
+            name="last_name"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <input 
+            type="email" 
+            [(ngModel)]="currentUser.email" 
+            name="email"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div class="col-span-2" *ngIf="!isEditMode">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+          <input 
+            type="password" 
+            [(ngModel)]="currentUser.password" 
+            name="password"
+            [required]="!isEditMode"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+          <div class="space-y-2">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input 
+                type="radio" 
+                [(ngModel)]="selectedRole" 
+                name="role"
+                value="super_admin"
+                class="text-indigo-600 focus:ring-indigo-500"
+              />
+              <span class="text-sm text-gray-700">Super Admin (Full access)</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input 
+                type="radio" 
+                [(ngModel)]="selectedRole" 
+                name="role"
+                value="admin"
+                class="text-indigo-600 focus:ring-indigo-500"
+              />
+              <span class="text-sm text-gray-700">Admin (Manage products, inventory, orders)</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input 
+                type="radio" 
+                [(ngModel)]="selectedRole" 
+                name="role"
+                value="cashier"
+                class="text-indigo-600 focus:ring-indigo-500"
+              />
+              <span class="text-sm text-gray-700">Cashier (Process transactions only)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+        <button 
+          type="button" 
+          (click)="closeModal()"
+          class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          [disabled]="loading"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+        >
+          {{ loading ? 'Saving...' : (isEditMode ? 'Update' : 'Create') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -41,16 +41,28 @@ export class AdminOrdersComponent implements OnInit {
     this.loading = true;
     this.error = '';
     
-    this.productService.getTransactions().subscribe({
+    const params: any = {
+      page: this.currentPage,
+      page_size: this.itemsPerPage
+    };
+    
+    if (this.searchTerm) params.search = this.searchTerm;
+    if (this.statusFilter) params.status = this.statusFilter;
+    if (this.cashierFilter) params.cashier = this.cashierFilter;
+    if (this.dateFilter) params.date = this.dateFilter;
+    
+    this.productService.getTransactions(params).subscribe({
       next: (response: any) => {
         if (response && response.results) {
-          this.transactions = response.results;
+          this.filteredTransactions = response.results;
+          this.totalPages = Math.ceil(response.count / this.itemsPerPage);
         } else if (Array.isArray(response)) {
-          this.transactions = response;
+          this.filteredTransactions = response;
+          this.totalPages = 1;
         } else {
-          this.transactions = [];
+          this.filteredTransactions = [];
+          this.totalPages = 1;
         }
-        this.applyFilters();
         this.loading = false;
       },
       error: (err) => {
@@ -62,41 +74,21 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   applyFilters(): void {
-    this.filteredTransactions = this.transactions.filter(transaction => {
-      const matchesSearch = !this.searchTerm || 
-        transaction.transaction_number.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesStatus = !this.statusFilter || 
-        transaction.status === this.statusFilter;
-      
-      const matchesCashier = !this.cashierFilter || 
-        transaction.cashier_name?.toLowerCase().includes(this.cashierFilter.toLowerCase());
-      
-      const matchesDate = !this.dateFilter || 
-        transaction.created_at.startsWith(this.dateFilter);
-      
-      return matchesSearch && matchesStatus && matchesCashier && matchesDate;
-    });
-    
-    this.totalPages = Math.ceil(this.filteredTransactions.length / this.itemsPerPage);
-    this.currentPage = 1; // Reset to first page when filtering
-  }
-
-  getDisplayedTransactions(): any[] {
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    return this.filteredTransactions.slice(startIndex, endIndex);
+    this.currentPage = 1;
+    this.loadTransactions();
   }
 
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
+      this.loadTransactions();
     }
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
+      this.loadTransactions();
     }
   }
 

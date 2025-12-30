@@ -23,6 +23,8 @@ export class ProductManagementComponent implements OnInit {
   showModal: boolean = false;
   isEditMode: boolean = false;
   currentProduct: Partial<Product> = {};
+  selectedImageFile: File | null = null;
+  imagePreview: string | null = null;
   
   loading: boolean = false;
   error: string = '';
@@ -189,19 +191,57 @@ export class ProductManagementComponent implements OnInit {
       is_taxable: true,
       is_active: true
     };
+    this.selectedImageFile = null;
+    this.imagePreview = null;
     this.showModal = true;
   }
 
   openEditModal(product: Product): void {
     this.isEditMode = true;
     this.currentProduct = { ...product };
+    this.selectedImageFile = null;
+    this.imagePreview = product.image || null;
     this.showModal = true;
   }
 
   closeModal(): void {
     this.showModal = false;
     this.currentProduct = {};
+    this.selectedImageFile = null;
+    this.imagePreview = null;
     this.error = '';
+  }
+
+  onImageSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        this.error = 'Image size must be less than 5MB';
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.error = 'Please select a valid image file';
+        return;
+      }
+      
+      this.selectedImageFile = file;
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.imagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeImage(): void {
+    this.selectedImageFile = null;
+    this.imagePreview = null;
+    this.currentProduct.image = undefined;
   }
 
   saveProduct(): void {
@@ -216,14 +256,23 @@ export class ProductManagementComponent implements OnInit {
       ? this.currentProduct.category 
       : this.currentProduct.category?.id;
     
-    const productData = {
-      ...this.currentProduct,
-      category: categoryId
-    };
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('name', this.currentProduct.name || '');
+    formData.append('description', this.currentProduct.description || '');
+    formData.append('category', categoryId?.toString() || '');
+    formData.append('base_price', this.currentProduct.base_price?.toString() || '0');
+    formData.append('sku', this.currentProduct.sku || '');
+    formData.append('is_taxable', this.currentProduct.is_taxable ? 'true' : 'false');
+    formData.append('is_active', this.currentProduct.is_active ? 'true' : 'false');
+    
+    if (this.selectedImageFile) {
+      formData.append('image', this.selectedImageFile);
+    }
 
     const operation = this.isEditMode
-      ? this.productService.updateProduct(this.currentProduct.id!, productData)
-      : this.productService.createProduct(productData);
+      ? this.productService.updateProductWithImage(this.currentProduct.id!, formData)
+      : this.productService.createProductWithImage(formData);
 
     operation.subscribe({
       next: () => {
@@ -232,7 +281,7 @@ export class ProductManagementComponent implements OnInit {
         this.loadProducts();
         setTimeout(() => this.success = '', 3000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = `Failed to ${this.isEditMode ? 'update' : 'create'} product`;
         console.error('Error saving product:', err);
         this.loading = false;
@@ -252,7 +301,7 @@ export class ProductManagementComponent implements OnInit {
         this.loadProducts();
         setTimeout(() => this.success = '', 3000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = 'Failed to delete product';
         console.error('Error deleting product:', err);
         this.loading = false;

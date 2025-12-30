@@ -105,24 +105,19 @@ export class ProductService {
   }
 
   // Category Methods
-  getCategories(activeOnly: boolean = false): Observable<Category[]> {
+  getCategories(activeOnly: boolean = false, paginationParams?: any): Observable<any> {
     let params = new HttpParams();
     if (activeOnly) {
       params = params.set('is_active', 'true');
     }
-    return this.http.get<any>(`${this.apiUrl}/categories/`, { params }).pipe(
-      map((response: any) => {
-        // Handle paginated response
-        if (response && response.results && Array.isArray(response.results)) {
-          return response.results;
+    if (paginationParams) {
+      Object.keys(paginationParams).forEach(key => {
+        if (paginationParams[key]) {
+          params = params.set(key, paginationParams[key].toString());
         }
-        // Handle direct array response
-        if (Array.isArray(response)) {
-          return response;
-        }
-        return [];
-      })
-    );
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/categories/`, { params });
   }
 
   getCategory(id: number): Observable<Category> {
@@ -201,6 +196,31 @@ export class ProductService {
   deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/products/${id}/`, {
       headers: this.getHeaders()
+    });
+  }
+
+  // Product methods with image upload support
+  createProductWithImage(formData: FormData): Observable<Product> {
+    const token = this.authService.getAccessToken();
+    const headers: any = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    // Don't set Content-Type for FormData - browser will set it with boundary
+    return this.http.post<Product>(`${this.apiUrl}/products/`, formData, {
+      headers: new HttpHeaders(headers)
+    });
+  }
+
+  updateProductWithImage(id: number, formData: FormData): Observable<Product> {
+    const token = this.authService.getAccessToken();
+    const headers: any = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    // Don't set Content-Type for FormData - browser will set it with boundary
+    return this.http.put<Product>(`${this.apiUrl}/products/${id}/`, formData, {
+      headers: new HttpHeaders(headers)
     });
   }
 
@@ -299,20 +319,18 @@ export class ProductService {
   }
 
   // Inventory Methods
-  getInventory(productId?: number, lowStock?: boolean, outOfStock?: boolean): Observable<Inventory[]> {
-    let params = new HttpParams();
-    if (productId) {
-      params = params.set('product', productId.toString());
+  getInventory(params?: any): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null) {
+          httpParams = httpParams.set(key, params[key].toString());
+        }
+      });
     }
-    if (lowStock) {
-      params = params.set('low_stock', 'true');
-    }
-    if (outOfStock) {
-      params = params.set('out_of_stock', 'true');
-    }
-    return this.http.get<Inventory[]>(`${this.apiUrl}/inventory/`, { 
-      params,
-      headers: this.getHeaders()
+    return this.http.get<any>(`${this.apiUrl}/inventory/`, { 
+      headers: this.getHeaders(),
+      params: httpParams 
     });
   }
 
@@ -392,9 +410,18 @@ export class ProductService {
     });
   }
 
-  getTransactions(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/transactions/`, {
-      headers: this.getHeaders()
+  getTransactions(params?: any): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key]) {
+          httpParams = httpParams.set(key, params[key].toString());
+        }
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/transactions/`, {
+      headers: this.getHeaders(),
+      params: httpParams
     });
   }
 

@@ -1,0 +1,120 @@
+<div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+    <p class="text-gray-600 text-sm">Sales insights and performance metrics</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-4">{{ error }}</div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-8">
+    <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <p class="text-gray-600 mt-2">Loading analytics...</p>
+  </div>
+
+  <!-- Date Range Filter -->
+  <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex gap-4 flex-wrap items-end">
+    <div class="flex flex-col min-w-[200px]">
+      <label class="text-sm font-medium text-gray-700 mb-1">Start Date</label>
+      <input 
+        type="date" 
+        [(ngModel)]="startDate" 
+        class="border border-gray-300 rounded-md px-3 py-2 text-sm"
+      >
+    </div>
+    
+    <div class="flex flex-col min-w-[200px]">
+      <label class="text-sm font-medium text-gray-700 mb-1">End Date</label>
+      <input 
+        type="date" 
+        [(ngModel)]="endDate" 
+        class="border border-gray-300 rounded-md px-3 py-2 text-sm"
+      >
+    </div>
+    
+    <button (click)="loadAnalytics()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+      Apply Filter
+    </button>
+  </div>
+
+  <!-- Revenue Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+      <h3 class="text-gray-600 text-sm font-medium mb-2">Total Revenue</h3>
+      <p class="text-3xl font-bold text-green-600">${{ analytics.totalRevenue | number:'1.2-2' }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+      <h3 class="text-gray-600 text-sm font-medium mb-2">Total Transactions</h3>
+      <p class="text-3xl font-bold text-blue-600">{{ analytics.totalTransactions }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+      <h3 class="text-gray-600 text-sm font-medium mb-2">Average Order Value</h3>
+      <p class="text-3xl font-bold text-purple-600">${{ analytics.averageOrderValue | number:'1.2-2' }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+      <h3 class="text-gray-600 text-sm font-medium mb-2">Items Sold</h3>
+      <p class="text-3xl font-bold text-yellow-600">{{ analytics.totalItemsSold }}</p>
+    </div>
+  </div>
+
+  <!-- Top Selling Products -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4">Top Selling Products</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto">
+        <thead>
+          <tr class="bg-gray-50 border-b">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Units Sold</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let product of analytics.topProducts; let i = index" class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ i + 1 }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ product.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ product.category }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ product.units_sold }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${{ product.revenue | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="analytics.topProducts.length === 0">
+            <td colspan="5" class="px-6 py-8 text-center text-gray-500">No data available</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Revenue Trends -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4">Daily Revenue Trends</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto">
+        <thead>
+          <tr class="bg-gray-50 border-b">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let trend of analytics.dailyTrends" class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ trend.date | date:'mediumDate' }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ trend.transactions }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${{ trend.revenue | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="analytics.dailyTrends.length === 0">
+            <td colspan="3" class="px-6 py-8 text-center text-gray-500">No data available</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

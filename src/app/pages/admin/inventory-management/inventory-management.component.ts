@@ -50,10 +50,26 @@ export class InventoryManagementComponent implements OnInit {
 
   loadInventory(): void {
     this.loading = true;
-    this.productService.getInventory().subscribe({
+    const params: any = {
+      page: this.currentPage,
+      page_size: this.itemsPerPage
+    };
+    
+    if (this.searchTerm) params.search = this.searchTerm;
+    if (this.showLowStockOnly) params.low_stock = true;
+    
+    this.productService.getInventory(params).subscribe({
       next: (data: any) => {
-        this.inventory = Array.isArray(data) ? data : (data.results || []);
-        this.applyFilters();
+        if (data && data.results) {
+          this.displayedInventory = data.results;
+          this.totalPages = Math.ceil(data.count / this.itemsPerPage);
+        } else if (Array.isArray(data)) {
+          this.displayedInventory = data;
+          this.totalPages = 1;
+        } else {
+          this.displayedInventory = [];
+          this.totalPages = 1;
+        }
         this.loading = false;
       },
       error: () => {
@@ -64,37 +80,21 @@ export class InventoryManagementComponent implements OnInit {
   }
 
   applyFilters(): void {
-    this.filteredInventory = this.inventory.filter(item => {
-      const matchesSearch = !this.searchTerm || 
-        item.product_name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        item.variant_name?.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesLowStock = !this.showLowStockOnly || item.is_low_stock;
-      
-      return matchesSearch && matchesLowStock;
-    });
     this.currentPage = 1;
-    this.updatePagination();
-  }
-
-  updatePagination(): void {
-    this.totalPages = Math.ceil(this.filteredInventory.length / this.itemsPerPage);
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    this.displayedInventory = this.filteredInventory.slice(startIndex, endIndex);
+    this.loadInventory();
   }
 
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
-      this.updatePagination();
+      this.loadInventory();
     }
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
-      this.updatePagination();
+      this.loadInventory();
     }
   }
 

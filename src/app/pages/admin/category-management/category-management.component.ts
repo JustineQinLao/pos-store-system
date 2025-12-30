@@ -37,16 +37,23 @@ export class CategoryManagementComponent implements OnInit {
 
   loadCategories(): void {
     this.loading = true;
-    this.productService.getCategories(false).subscribe({
+    const params = {
+      page: this.currentPage,
+      page_size: this.itemsPerPage
+    };
+    
+    this.productService.getCategories(false, params).subscribe({
       next: (response: any) => {
-        // Handle paginated API response
         if (response && response.results) {
-          this.categories = response.results;
+          this.displayedCategories = response.results;
+          this.totalPages = Math.ceil(response.count / this.itemsPerPage);
+        } else if (Array.isArray(response)) {
+          this.displayedCategories = response;
+          this.totalPages = 1;
         } else {
-          this.categories = response;
+          this.displayedCategories = [];
+          this.totalPages = 1;
         }
-        this.filteredCategories = this.categories;
-        this.updatePagination();
         this.loading = false;
       },
       error: (err) => {
@@ -56,24 +63,17 @@ export class CategoryManagementComponent implements OnInit {
     });
   }
 
-  updatePagination(): void {
-    this.totalPages = Math.ceil(this.filteredCategories.length / this.itemsPerPage);
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    this.displayedCategories = this.filteredCategories.slice(startIndex, endIndex);
-  }
-
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
-      this.updatePagination();
+      this.loadCategories();
     }
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
-      this.updatePagination();
+      this.loadCategories();
     }
   }
 

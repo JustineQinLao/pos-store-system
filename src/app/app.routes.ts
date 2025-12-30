@@ -5,6 +5,8 @@ import { CategoryManagementComponent } from './pages/admin/category-management/c
 import { InventoryManagementComponent } from './pages/admin/inventory-management/inventory-management.component';
 import { AdminDashboardComponent } from './pages/admin/dashboard/dashboard.component';
 import { AdminOrdersComponent } from './pages/admin/orders/orders.component';
+import { UserManagementComponent } from './pages/admin/user-management/user-management.component';
+import { AnalyticsComponent } from './pages/admin/analytics/analytics.component';
 import { CartComponent } from './pages/cart/cart.component';
 import { CashierComponent } from './pages/cashier/cashier.component';
 import { TransactionHistoryComponent } from './pages/cashier/transaction-history/transaction-history.component';
@@ -52,6 +54,18 @@ export const routes: Routes = [
   { 
     path: 'admin/orders', 
     component: AdminOrdersComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+  },
+  { 
+    path: 'admin/users', 
+    component: UserManagementComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+  },
+  { 
+    path: 'admin/analytics', 
+    component: AnalyticsComponent,
     canActivate: [authGuard, roleGuard],
     data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
   },
